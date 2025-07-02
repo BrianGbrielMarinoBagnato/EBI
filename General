@@ -7,6 +7,7 @@ A continuacion voy a pasar las tareas asi nomas y luego la pasamos a limpio
   Estudiar las librerias (versiones)
   Definir alcances
   Se va a usar el celular? se va a convertir en apk?
+  Juntar todos los informes existentes
 
 ideas
 FASE 1: Hacer una base de datos con rostros. Luego que el programa detecte un rostro, y si ese rostro se encuentra en la base de datos, que tire un mensaje de alerta a la policia (gmail, watsap, sms).
