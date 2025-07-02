@@ -12,7 +12,7 @@ import customtkinter as ctk
 import tkinter as tk
 from PIL import Image, ImageTk
 from tkinter import PhotoImage, simpledialog, messagebox, filedialog
-import base
+import Programacion.base as base
 import os
 import cv2
 import numpy as np
