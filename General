@@ -1,0 +1,19 @@
+A continuacion voy a pasar las tareas asi nomas y luego la pasamos a limpio
+  Definir objetivos del proyecto, Fases
+  Quienes van a programar 
+  Quien se encarga de parte papeles y lo administrativo
+  Ordenar y estudiar el codigo
+  Ver que puede hacer el codigo
+  Estudiar las librerias (versiones)
+  Definir alcances
+  Se va a usar el celular? se va a convertir en apk?
+
+ideas
+FASE 1: Hacer una base de datos con rostros. Luego que el programa detecte un rostro, y si ese rostro se encuentra en la base de datos, que tire un mensaje de alerta a la policia (gmail, watsap, sms).
+tiene que saltar fecha, hora, ubicacion y una foto de el, en caso que sea gmail o watsap
+FASE 2: Facilitar la carga de rostros a una base de datos. Que haya una interfaz para subir los rostros. Luego la otra seccion para escanear
+FASE 3: Analizar como pasar ese software a una camara oculta. Que la carga de imagenes sea con un pendrive
+El programa estara corriendo en puntos estrategicos
+
+Dias para programar o Dias libres
+6 horas totales en hora
