@@ -11,12 +11,12 @@ import smtplib
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from email.mime.image import MIMEImage
-import playsound
+import pygame
 import threading
 import time
 
 # Configuración global
-DB_FILE = 'ebi_database.db'
+DB_FILE = './EBI para Municipio/ebi_database.db'
 ALARM_SOUND = 'alarm.wav'  # Archivo de sonido de alarma (debe existir)
 APP_TITLE = "EBI - Escáner Biométrico Inteligente"
 
