@@ -50,7 +50,7 @@ class EBIApp:
         self.root = root
         self.root.title(APP_TITLE)
         self.root.geometry("1000x700")
-        self.root.configure(bg='#0B4C96')
+        self.root.configure(bg='#f0f0f0')
         
         # Variables de estado
         self.camera_active = False
@@ -264,12 +264,12 @@ class StartFrame(tk.Frame):
     def __init__(self, parent, controller):
         super().__init__(parent)
         self.controller = controller
-        self.configure(bg='#f0f0f0')
+        self.configure(bg='#0B4C96')
         
-        title = tk.Label(self, text="ELEGIR MODO", font=("Arial", 24, "bold"), bg='#f0f0f0')
+        title = tk.Label(self, text="ELEGIR MODO", font=("Arial", 24, "bold"), bg='#0B4C96')
         title.pack(pady=40)
         
-        frame = tk.Frame(self, bg='#f0f0f0')
+        frame = tk.Frame(self, bg='#0B4C96')
         frame.pack(expand=True)
         
         btn_buscar = tk.Button(frame, text="Buscar intruso", font=("Arial", 14), 
@@ -287,7 +287,7 @@ class CargarIntrusoFrame(tk.Frame):
     def __init__(self, parent, controller):
         super().__init__(parent)
         self.controller = controller
-        self.configure(bg='#f0f0f0')
+        self.configure(bg='#0B4C96')
         self.photo_path = None
         self.preview_img = None
         
@@ -298,27 +298,27 @@ class CargarIntrusoFrame(tk.Frame):
         btn_volver.grid(row=0, column=0, padx=10, pady=10, sticky='nw')
         
         # Título
-        title = tk.Label(self, text="CARGAR INTRUSO", font=("Arial", 20, "bold"), bg='#f0f0f0')
+        title = tk.Label(self, text="CARGAR INTRUSO", font=("Arial", 20, "bold"), bg='#0B4C96')
         title.grid(row=0, column=1, columnspan=2, pady=20)
         
         # Formulario
-        form_frame = tk.Frame(self, bg='#f0f0f0')
+        form_frame = tk.Frame(self, bg='#0B4C96')
         form_frame.grid(row=1, column=0, columnspan=3, padx=20, pady=10)
         
-        tk.Label(form_frame, text="NOMBRE:", font=("Arial", 12), bg='#f0f0f0').grid(row=0, column=0, padx=10, pady=10, sticky='e')
+        tk.Label(form_frame, text="NOMBRE:", font=("Arial", 12), bg='#0B4C96').grid(row=0, column=0, padx=10, pady=10, sticky='e')
         self.entry_nombre = tk.Entry(form_frame, font=("Arial", 12), width=30)
         self.entry_nombre.grid(row=0, column=1, padx=10, pady=10)
         
-        tk.Label(form_frame, text="DNI:", font=("Arial", 12), bg='#f0f0f0').grid(row=1, column=0, padx=10, pady=10, sticky='e')
+        tk.Label(form_frame, text="DNI:", font=("Arial", 12), bg='#0B4C96').grid(row=1, column=0, padx=10, pady=10, sticky='e')
         self.entry_dni = tk.Entry(form_frame, font=("Arial", 12), width=30)
         self.entry_dni.grid(row=1, column=1, padx=10, pady=10)
         
-        tk.Label(form_frame, text="DESCRIPCIÓN:", font=("Arial", 12), bg='#f0f0f0').grid(row=2, column=0, padx=10, pady=10, sticky='e')
+        tk.Label(form_frame, text="DESCRIPCIÓN:", font=("Arial", 12), bg='#0B4C96').grid(row=2, column=0, padx=10, pady=10, sticky='e')
         self.entry_desc = tk.Text(form_frame, font=("Arial", 12), width=30, height=4)
         self.entry_desc.grid(row=2, column=1, padx=10, pady=10)
         
         # Botones para la foto
-        btn_frame = tk.Frame(self, bg='#f0f0f0')
+        btn_frame = tk.Frame(self, bg='#0B4C96')
         btn_frame.grid(row=2, column=0, columnspan=3, pady=20)
         
         btn_tomar = tk.Button(btn_frame, text="Tomar foto", font=("Arial", 12), 
