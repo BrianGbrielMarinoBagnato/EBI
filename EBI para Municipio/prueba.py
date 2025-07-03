@@ -50,7 +50,7 @@ class EBIApp:
         self.root = root
         self.root.title(APP_TITLE)
         self.root.geometry("1000x700")
-        self.root.configure(bg='#f0f0f0')
+        self.root.configure(bg='#0B4C96')
         
         # Variables de estado
         self.camera_active = False
