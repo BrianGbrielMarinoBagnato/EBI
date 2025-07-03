@@ -1,715 +1,696 @@
-#py -m pip install customtkinter
-#py -m pip install pillow
-#py -m pip install opencv-python
-#py -m pip install numpy
-#py -m pip install opencv-contrib-python
-#py -m pip install opencv-python-headless
-#py -m pip install scikit-image
-#py -m pip install imageio
-#py -m pip install matplotlib
+# py -m pip install customtkinter
+# py -m pip install pillow
+# py -m pip install opencv-python
+# py -m pip install numpy
+# py -m pip install scikit-image
+# py -m pip install imageio
+# py -m pip install matplotlib
 
 import customtkinter as ctk
 import tkinter as tk
 from PIL import Image, ImageTk
-from tkinter import PhotoImage, simpledialog, messagebox, filedialog
-import Programacion.base as base
+from tkinter import simpledialog, messagebox
 import os
 import cv2
 import numpy as np
-import io
-from PIL import Image
-from skimage.metrics import structural_similarity as ssim
-import cv2
-from datetime import datetime
 import sqlite3
+from datetime import datetime
+from skimage.metrics import structural_similarity as ssim
+import Programacion.base as base
+
+# ================================================ MAIN APPLICATION CLASS ================================================
+class FacialRecognitionApp:
+    def __init__(self):
+        self.root = ctk.CTk()
+        self.setup_window()
+        self.initialize_variables()
+        self.create_widgets()
+        self.root.mainloop()
     
-# ---------------------------------------------Configuración básica de la ventana---------------------------------------------
-ctk.set_appearance_mode("dark")
-root = ctk.CTk()
-
-root.title("Inicio de sesion/Registrarse")
-
-# Ocultar barra de tareas
-root.overrideredirect(True)
-
-# Obtener dimensiones de la pantalla
-screen_width = root.winfo_screenwidth()
-screen_height = root.winfo_screenheight()
-print(screen_width,'-',screen_height)
-
-# Calcular factores de escala
-scale_width = (screen_width / 1280)  # 1280 es el ancho base
-scale_height = (screen_height / 720)  # 720 es la altura base
-print(scale_width,'-',scale_height)
-
-# Establecer tamaño de la ventana
-root.geometry("%dx%d+0+0" % (screen_width, screen_height))
-
-###############################################################################FUNCIONES###############################################################################
-
-# ----------------------------------------------------Botón de REGISTER---------------------------------------------
-def limpiarRegistro():
-    #image_label.configure(image='')  # Elimina la imagen mostrada en el label
-    for entry in Entradas:  # Entradas es la lista que contiene todas las CTkEntry
-        entry.delete(0, 'end')  # Borra el contenido actual del campo de entrada
-        entry.configure(fg_color='#343638')  # Restablece el color del texto a gris
-    DNI_entry.configure(placeholder_text='DNI - Profesor')
-    
-    nombre_entry.configure(placeholder_text='Nombre/s')
-    apellido_s_entry.configure(placeholder_text='Apellido/s')
-    mail_entry.configure(placeholder_text='e-mail')
-    password_entry.configure(placeholder_text='Contraseña')
-    password_confirm_entry.configure(placeholder_text='Confirmar contraseña')
-#-------------------------------------------FUNCIONES DE VALIDACION---------------------------------------------------------------------#
-def validarDni(P):
-        if P.isdigit() and len(P) == 8:
-            DNI_entry.configure(fg_color='#343638',text_color='#909298') 
-            return True
+    def setup_window(self):
+        """Configure the main application window"""
+        ctk.set_appearance_mode("dark")
+        self.root.title("Sistema de Reconocimiento Facial - EBI")
+        self.root.overrideredirect(True)  # Hide title bar
         
-        else:
-            DNI_entry.configure(fg_color="#b74241",text_color='black')
-            return True
-
-
-def validarNombre(P):
-
-    if P.isalpha():
-        nombre_entry.configure(fg_color='#343638',text_color='#909298') 
-        return True
-    else:
-        nombre_entry.configure(fg_color="#b74241",text_color='black') 
-        return True
-
-def validarApellido(P):
-
-        if P.isalpha():
-            apellido_s_entry.configure(fg_color='#343638',text_color='#909298') 
-            return True
-        else:
-            apellido_s_entry.configure(fg_color="#b74241",text_color='black')
-
-
-
-def validarMail(P): 
-
-        if "@" in P and "." in P :
-            mail_entry.configure(fg_color='#343638',text_color='#909298') 
-            return True
-        else:
-            mail_entry.configure(fg_color="#b74241",text_color='black') 
-            return True
-
-
-
-def validarContrasena(P):
-
-        if P == "":
-            password_entry.configure(fg_color="#b74241",text_color='black') 
-            return True
-        else:
-            password_entry.configure(fg_color='#343638',text_color='#909298') 
-            return True
-
-def validarConfirmarContrasena(P,Pass):
-       
-        if P != Pass or P=='':
-           
-           password_confirm_entry.configure(fg_color="#b74241",text_color='black') 
-           return True
-        else:
-           password_confirm_entry.configure(fg_color='#343638',text_color='#909298') 
-           return True
-#-------------------------------------------FUNCIONES DE VALIDACION---------------------------------------------------------------------#
-
-#----------------------------------------Función para cambiar entre Sign In y Register--------------------------------------------
-def show_frame(frame):
-    button_frame.configure(fg_color=sign_in_button_main.cget('fg_color'))
-    if frame == sign_in_frame:
-        sign_in_button.configure(fg_color=sign_in_frame.cget('fg_color'), corner_radius=20)
-        register_button.configure(fg_color=register_button_main.cget('fg_color'), corner_radius=0)
-        frame.tkraise()
+        # Get screen dimensions
+        self.screen_width = self.root.winfo_screenwidth()
+        self.screen_height = self.root.winfo_screenheight()
         
-    else:
-        contraseña = simpledialog.askstring("Ingresar Contraseña", 
-                                            "Por favor, ingrese la contraseña:", 
-                                            show='*',
-                                            parent=frame)  # Añadir 'parent' para centrar en 'frame'
-        if contraseña is None:  # Si se presionó "Cancelar"
-            return 
-        if contraseña != 'admin':
-            messagebox.showinfo("-- Error --", "Contraseña Incorrecta", parent=frame)
-            return
-        register_button.configure(fg_color=sign_in_frame.cget('fg_color'), corner_radius=20)
-        sign_in_button.configure(fg_color=sign_in_button_main.cget('fg_color'), corner_radius=0)
-        frame.tkraise()
-        global colorBase
-        colorBase=nombre_entry.cget('bg_color')
-#----------------------------------------Función para cambiar entre Sign In y Register--------------------------------------------#
-
-#-------------------------------------FUNCIONES DE COMPARACIÓN DE IMÁGENES-------------------------------------
-
-
-def comparar_imagenes(img_bytes_guardada, img_bytes_capturada):
-    # Convertir bytes a imágenes
-    img_guardada = cv2.imdecode(np.frombuffer(img_bytes_guardada, np.uint8), cv2.IMREAD_COLOR)
-    img_capturada = cv2.imdecode(np.frombuffer(img_bytes_capturada, np.uint8), cv2.IMREAD_COLOR)
+        # Set window size to full screen
+        self.root.geometry(f"{self.screen_width}x{self.screen_height}+0+0")
+        
+        # Calculate scale factors
+        self.scale_width = self.screen_width / 1280
+        self.scale_height = self.screen_height / 720
+        
+        # Load face cascade
+        self.face_cascade = cv2.CascadeClassifier(
+            cv2.data.haarcascades + 'haarcascade_frontalface_default.xml'
+        )
+        if self.face_cascade.empty():
+            raise RuntimeError("Error loading face detection model")
     
-    if img_guardada is None or img_capturada is None:
-        return False
-
-    # Crear el detector de características LBPH (Local Binary Patterns Histograms)
-    face_recognizer = cv2.face.LBPHFaceRecognizer_create()
+    def initialize_variables(self):
+        """Initialize application variables"""
+        self.img_bytes = None
+        self.current_user = None
+        self.cap = None
+        self.user_image_cache = {}
+        
+        # Create users directory if not exists
+        os.makedirs('usuarios', exist_ok=True)
+        
+        # Initialize database
+        base.initialize_database()
     
-    # Entrenar el recognizer con la imagen guardada
-    face_recognizer.train([cv2.cvtColor(img_guardada, cv2.COLOR_BGR2GRAY)], np.array([0]))
-
-    # Comparar la imagen capturada con la imagen guardada
-    label, confidence = face_recognizer.predict(cv2.cvtColor(img_capturada, cv2.COLOR_BGR2GRAY))
+    def create_widgets(self):
+        """Create all GUI components"""
+        self.create_container()
+        self.create_main_frame()
+        self.create_start_frame()
+        self.create_sign_in_frame()
+        self.create_register_frame()
+        self.create_dashboard_frame()
+        self.start_frame.tkraise()
     
-    print(f'Confianza: {confidence}')  # Para depuración
-    umbral_confianza = 61.0
+    # ================================================ UI COMPONENTS ================================================
+    def create_container(self):
+        """Create main container"""
+        self.container = ctk.CTkFrame(self.root)
+        self.container.place(relx=0.5, rely=0.5, anchor=tk.CENTER)
     
-    # Retorna True si la confianza es menor que el umbral, indicando que la identidad es verificada
-    return confidence < umbral_confianza
-
-#-------------------------------------FUNCIONES PARA CARGAR IMAGEN EN LA CARPETA-------------------------------------
-def cargar_imagen_guardada(nombre, dni):
-    ruta_carpeta_usuario = os.path.join('usuarios', f"{nombre}_{dni}")
-    ruta_imagen_guardada = os.path.join(ruta_carpeta_usuario, 'imagen.jpg')
+    def create_main_frame(self):
+        """Create main application frame"""
+        self.main_frame = ctk.CTkFrame(
+            master=self.container, 
+            width=self.screen_width * 0.85, 
+            height=self.screen_height * 0.8,
+            fg_color=self.container.cget('fg_color')
+        )
+        self.main_frame.pack(padx=20, pady=20)
     
-    if not os.path.exists(ruta_imagen_guardada):
-        return None
+    def create_start_frame(self):
+        """Create welcome screen"""
+        self.start_frame = ctk.CTkFrame(
+            master=self.main_frame, 
+            width=self.screen_width * 0.85,
+            height=self.screen_height * 0.8
+        )
+        self.start_frame.place(relx=0.5, rely=0.5, anchor=tk.CENTER)
+        
+        # Load and display logo
+        logo_img = self.load_and_resize_image('Logo_e.b.i.png', 300, 300)
+        logo_label = ctk.CTkLabel(
+            master=self.start_frame, 
+            text='', 
+            image=logo_img, 
+            width=200, 
+            height=200
+        )
+        logo_label.place(relx=0.5, rely=0.25, anchor=tk.CENTER)
+        
+        # Application title
+        title_label = ctk.CTkLabel(
+            master=self.start_frame, 
+            text="E.B.I.", 
+            font=("Arial", 40)
+        )
+        title_label.place(relx=0.5, rely=0.5, anchor=tk.CENTER)
+        
+        # Separator line
+        separator = ctk.CTkLabel(
+            master=self.start_frame, 
+            text="______________________________", 
+            font=("Arial", 20)
+        )
+        separator.place(relx=0.5, rely=0.55, anchor=tk.CENTER)
+        
+        # Slogan
+        slogan = ctk.CTkLabel(
+            master=self.start_frame, 
+            text="Escaner Biométrico Inteligente", 
+            font=("Arial", 20)
+        )
+        slogan.place(relx=0.5, rely=0.62, anchor=tk.CENTER)
+        
+        # Start button
+        start_btn = ctk.CTkButton(
+            master=self.start_frame, 
+            text="Iniciar",
+            font=('Arial', 30), 
+            width=self.screen_width * 0.5, 
+            height=self.screen_height * 0.1,
+            command=self.show_login
+        )
+        start_btn.place(relx=0.5, rely=0.8, anchor=tk.CENTER)
+        
+        # Exit button
+        exit_btn = ctk.CTkButton(
+            master=self.start_frame, 
+            text="Salir", 
+            font=('Arial', 30), 
+            width=self.screen_width * 0.09, 
+            height=self.screen_height * 0.045, 
+            fg_color="red", 
+            command=self.root.quit
+        )
+        exit_btn.place(relx=0.795, rely=0.95, anchor=tk.SE)
     
-    with open(ruta_imagen_guardada, 'rb') as file:
-        return file.read()
-
-#-------------------------------------FUNCIONES PARA AUTENTICAR USUARIO-------------------------------------
-def autenticar_usuario(nombre, dni):
-    global cap
-    cap = cv2.VideoCapture(0)
+    def create_sign_in_frame(self):
+        """Create login frame"""
+        self.sign_in_frame = ctk.CTkFrame(
+            master=self.main_frame, 
+            width=self.screen_width * 0.85,
+            height=self.screen_height * 0.75
+        )
+        self.sign_in_frame.place(relx=0.5, rely=0.55, anchor=tk.CENTER)
+        
+        # Title
+        title = ctk.CTkLabel(
+            master=self.sign_in_frame, 
+            text="Iniciar Sesión", 
+            font=("Arial", 30)
+        )
+        title.place(relx=0.5, rely=0.48, anchor=tk.CENTER)
+        
+        # User icon
+        user_icon = self.load_and_resize_image('Icono_Usuario.png', 300, 300)
+        user_img = ctk.CTkLabel(
+            master=self.sign_in_frame,
+            text='', 
+            image=user_icon, 
+            width=int(round(100 * self.scale_width)), 
+            height=int(round(100 * self.scale_height))
+        )
+        user_img.place(relx=0.5, rely=0.285, anchor=tk.CENTER)
+        
+        # DNI input
+        self.DNI_inicio_entry = ctk.CTkEntry(
+            master=self.sign_in_frame, 
+            placeholder_text="DNI - Profesor", 
+            width=self.screen_width * 0.45, 
+            height=self.screen_height * 0.05
+        )
+        self.DNI_inicio_entry.place(relx=0.5, rely=0.6, anchor=tk.CENTER)
+        
+        # Login button
+        login_btn = ctk.CTkButton(
+            master=self.sign_in_frame, 
+            text="Iniciar Sesión", 
+            width=self.screen_width * 0.45, 
+            height=self.screen_height * 0.07, 
+            font=("Arial", 30),
+            command=self.login
+        )
+        login_btn.place(relx=0.5, rely=0.715, anchor=tk.CENTER)
+        
+        # Back button
+        back_btn = ctk.CTkButton(
+            master=self.sign_in_frame, 
+            text="Volver", 
+            width=self.screen_width * 0.1, 
+            height=self.screen_height * 0.05,
+            command=self.show_start
+        )
+        back_btn.place(relx=0.1, rely=0.9, anchor=tk.CENTER)
+        
+        # Exit button
+        exit_btn = ctk.CTkButton(
+            master=self.sign_in_frame, 
+            text="Salir", 
+            font=('Arial', 30), 
+            width=self.screen_width * 0.09, 
+            height=self.screen_height * 0.045, 
+            fg_color="red", 
+            command=self.root.quit
+        )
+        exit_btn.place(relx=0.765, rely=0.85, anchor=tk.SE)
     
-    if not cap.isOpened():
-        messagebox.showerror("Error", "No se puede abrir la cámara.")
-        return False
-    
-    img_bytes_guardada = cargar_imagen_guardada(nombre, dni)
-    
-    if img_bytes_guardada is None:
-        messagebox.showerror("Error", "No se encontró la imagen guardada.")
-        cap.release()
-        cv2.destroyAllWindows()
-        return False
-    
-    while cap.isOpened():
-        ret, frame = cap.read()
-        if ret:
-            gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-            faces = face_cascade.detectMultiScale(gray, scaleFactor=1.1, minNeighbors=5, minSize=(30, 30))
+    def create_register_frame(self):
+        """Create registration frame"""
+        self.register_frame = ctk.CTkFrame(
+            master=self.main_frame, 
+            width=self.screen_width * 0.85,
+            height=self.screen_height * 0.75
+        )
+        self.register_frame.place(relx=0.5, rely=0.55, anchor=tk.CENTER)
+        
+        # User icon
+        user_icon = self.load_and_resize_image('Icono_Usuario.png', 300, 300)
+        user_img = ctk.CTkLabel(
+            master=self.register_frame,
+            text='', 
+            image=user_icon, 
+            width=int(round(50 * self.scale_width)), 
+            height=int(round(50 * self.scale_height))
+        )
+        user_img.place(relx=0.17, rely=0.50, anchor=tk.CENTER)
+        
+        # Form fields
+        fields = [
+            ("Nombre/s", 0.6, 0.2, "nombre_entry"),
+            ("Apellido/s", 0.6, 0.3, "apellido_entry"),
+            ("e-mail", 0.6, 0.4, "email_entry"),
+            ("DNI", 0.6, 0.5, "dni_entry"),
+            ("Contraseña", 0.6, 0.6, "password_entry"),
+            ("Confirmar Contraseña", 0.6, 0.7, "confirm_password_entry")
+        ]
+        
+        self.entries = {}
+        for text, relx, rely, name in fields:
+            entry = ctk.CTkEntry(
+                master=self.register_frame, 
+                placeholder_text=text,
+                width=self.screen_width * 0.45, 
+                height=self.screen_height * 0.05
+            )
+            entry.place(relx=relx, rely=rely, anchor=tk.CENTER)
+            self.entries[name] = entry
             
-            if faces:
-                # Extraer el primer rostro encontrado
-                x, y, w, h = faces[0]
-                face_image = gray[y:y+h, x:x+w]
-                
-                # Convertir el rostro a bytes
-                _, img_bytes_capturada = cv2.imencode('.jpg', face_image)
-                img_bytes_capturada = img_bytes_capturada.tobytes()
-                
-                similitud = comparar_imagenes(img_bytes_guardada, img_bytes_capturada)
-
-                if similitud:
-                    messagebox.showinfo('Autenticación exitosa', 'Usuario autenticado correctamente.')
-                    break
+            # Set validation based on field type
+            if name == "dni_entry":
+                entry.configure(validate="key", validatecommand=(self.root.register(self.validate_dni), '%P'))
+            elif name == "nombre_entry" or name == "apellido_entry":
+                entry.configure(validate="key", validatecommand=(self.root.register(self.validate_name), '%P', name))
+            elif name == "email_entry":
+                entry.configure(validate="key", validatecommand=(self.root.register(self.validate_email), '%P'))
+            elif "password" in name:
+                entry.configure(show="*")
+                if name == "password_entry":
+                    entry.configure(validate="key", validatecommand=(self.root.register(self.validate_password), '%P'))
                 else:
-                    messagebox.showwarning('Autenticación fallida', 'El rostro capturado no coincide con el guardado.')
-                    break
-
-            cv2.imshow('Autenticación', frame)
-
-            if cv2.waitKey(1) & 0xFF == ord('q'):
+                    entry.configure(validate="key", validatecommand=(self.root.register(self.validate_confirm_password), '%P', self.entries["password_entry"].get()))
+        
+        # Camera button
+        camera_btn = ctk.CTkButton(
+            master=self.register_frame, 
+            text="Tomar Foto", 
+            width=self.screen_width * 0.2, 
+            height=self.screen_height * 0.05,
+            command=self.capture_face_image
+        )
+        camera_btn.place(relx=0.18, rely=0.65, anchor=tk.CENTER)
+        
+        # Register button
+        register_btn = ctk.CTkButton(
+            master=self.register_frame, 
+            text="Registrarse", 
+            width=self.screen_width * 0.45, 
+            height=self.screen_height * 0.075, 
+            font=("Arial", 30),
+            command=self.register_user
+        )
+        register_btn.place(relx=0.6, rely=0.8, anchor=tk.CENTER)
+        
+        # Back button
+        back_btn = ctk.CTkButton(
+            master=self.register_frame, 
+            text="Volver", 
+            width=self.screen_width * 0.1, 
+            height=self.screen_height * 0.05,
+            command=self.show_login
+        )
+        back_btn.place(relx=0.1, rely=0.9, anchor=tk.CENTER)
+        
+        # Exit button
+        exit_btn = ctk.CTkButton(
+            master=self.register_frame, 
+            text="Salir", 
+            font=('Arial', 30), 
+            width=self.screen_width * 0.09, 
+            height=self.screen_height * 0.045, 
+            fg_color="red", 
+            command=self.root.quit
+        )
+        exit_btn.place(relx=0.8650, rely=0.9370, anchor=tk.SE)
+    
+    def create_dashboard_frame(self):
+        """Create user dashboard frame"""
+        self.dashboard_frame = ctk.CTkFrame(
+            master=self.main_frame, 
+            width=self.screen_width * 0.85,
+            height=self.screen_height * 0.75
+        )
+        self.dashboard_frame.place(relx=0.5, rely=0.55, anchor=tk.CENTER)
+        
+        # Welcome message
+        self.welcome_label = ctk.CTkLabel(
+            master=self.dashboard_frame, 
+            text="", 
+            font=("Arial", 30)
+        )
+        self.welcome_label.place(relx=0.5, rely=0.1, anchor=tk.CENTER)
+        
+        # User actions
+        actions = [
+            ("Ver Registros", self.show_records),
+            ("Tomar Asistencia", self.take_attendance),
+            ("Ver Reportes", self.show_reports),
+            ("Administrar Usuarios", self.manage_users),
+            ("Cerrar Sesión", self.logout)
+        ]
+        
+        for i, (text, command) in enumerate(actions):
+            btn = ctk.CTkButton(
+                master=self.dashboard_frame,
+                text=text,
+                width=self.screen_width * 0.3,
+                height=self.screen_height * 0.1,
+                font=("Arial", 20),
+                command=command
+            )
+            btn.place(relx=0.3 + (i % 2) * 0.4, rely=0.3 + (i // 2) * 0.2, anchor=tk.CENTER)
+    
+    # ================================================ UTILITY METHODS ================================================
+    def load_and_resize_image(self, path, width, height):
+        """Load and resize an image with caching"""
+        if path in self.user_image_cache:
+            return self.user_image_cache[path]
+        
+        try:
+            img = Image.open(path)
+            img = img.resize(
+                (int(round(width * self.scale_width)), 
+                 int(round(height * self.scale_height))), 
+                Image.LANCZOS
+            )
+            tk_img = ImageTk.PhotoImage(img)
+            self.user_image_cache[path] = tk_img
+            return tk_img
+        except Exception as e:
+            messagebox.showerror("Error", f"No se pudo cargar la imagen: {str(e)}")
+            return None
+    
+    # ================================================ VALIDATION METHODS ================================================
+    def validate_dni(self, value):
+        """Validate DNI input"""
+        if value.isdigit() and len(value) == 8:
+            self.entries["dni_entry"].configure(fg_color='#343638', text_color='#909298') 
+            return True
+        self.entries["dni_entry"].configure(fg_color="#b74241", text_color='black')
+        return True
+    
+    def validate_name(self, value, field_name):
+        """Validate name input"""
+        if value.replace(" ", "").isalpha():
+            self.entries[field_name].configure(fg_color='#343638', text_color='#909298') 
+            return True
+        self.entries[field_name].configure(fg_color="#b74241", text_color='black') 
+        return True
+    
+    def validate_email(self, value):
+        """Validate email input"""
+        if "@" in value and "." in value and len(value) > 5:
+            self.entries["email_entry"].configure(fg_color='#343638', text_color='#909298') 
+            return True
+        self.entries["email_entry"].configure(fg_color="#b74241", text_color='black') 
+        return True
+    
+    def validate_password(self, value):
+        """Validate password input"""
+        if len(value) >= 6:
+            self.entries["password_entry"].configure(fg_color='#343638', text_color='#909298') 
+            return True
+        self.entries["password_entry"].configure(fg_color="#b74241", text_color='black') 
+        return True
+    
+    def validate_confirm_password(self, value, password):
+        """Validate password confirmation"""
+        if value == password and value != "":
+            self.entries["confirm_password_entry"].configure(fg_color='#343638', text_color='#909298') 
+            return True
+        self.entries["confirm_password_entry"].configure(fg_color="#b74241", text_color='black') 
+        return True
+    
+    def is_form_valid(self):
+        """Check if all form fields are valid"""
+        return all(entry.cget("fg_color") == "#343638" for entry in self.entries.values())
+    
+    # ================================================ NAVIGATION METHODS ================================================
+    def show_frame(self, frame):
+        """Show the specified frame"""
+        frame.tkraise()
+    
+    def show_start(self):
+        """Show start screen"""
+        self.show_frame(self.start_frame)
+    
+    def show_login(self):
+        """Show login screen"""
+        self.clear_form()
+        self.show_frame(self.sign_in_frame)
+    
+    def show_register(self):
+        """Show registration screen"""
+        password = simpledialog.askstring(
+            "Acceso Administrativo", 
+            "Ingrese contraseña de administrador:", 
+            show='*',
+            parent=self.root
+        )
+        
+        if password is None:
+            return  # User canceled
+        
+        if password != 'admin':
+            messagebox.showwarning("Error", "Contraseña incorrecta")
+            return
+        
+        self.clear_form()
+        self.show_frame(self.register_frame)
+    
+    def show_dashboard(self):
+        """Show user dashboard"""
+        if self.current_user:
+            self.welcome_label.configure(text=f"Bienvenido, {self.current_user}")
+            self.show_frame(self.dashboard_frame)
+    
+    # ================================================ CORE FUNCTIONALITY ================================================
+    def clear_form(self):
+        """Clear all form fields"""
+        for entry in self.entries.values():
+            entry.delete(0, 'end')
+            entry.configure(fg_color='#343638')
+    
+    def capture_face_image(self):
+        """Capture face image using camera"""
+        self.cap = cv2.VideoCapture(0)
+        
+        if not self.cap.isOpened():
+            messagebox.showerror("Error", "No se puede acceder a la cámara")
+            return
+        
+        self.img_bytes = None
+        
+        while self.cap.isOpened():
+            ret, frame = self.cap.read()
+            if not ret:
                 break
-    
-    cap.release()
-    cv2.destroyAllWindows()
-
-
-#-------------------------------------------FUNCION PARA ABRIR CAMARA-----------------------------------------------#
-def abrir_camara():
-    global img_bytes
-    cap = cv2.VideoCapture(0)  # Intenta abrir la cámara
-    
-    # Verificar si la cámara se abrió correctamente
-    if not cap.isOpened():
-        messagebox.showerror("Error", "No se encontró ninguna cámara.")
-        return  # Salir de la función si no se puede abrir la cámara
-    
-    # Cargar el clasificador en cascada para detección de rostros
-    face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
-    
-    if face_cascade.empty():
-        raise IOError("No se pudo cargar el clasificador en cascada.")
-    
-    while cap.isOpened():
-        ret, frame = cap.read()
-        if ret:
-            # Detectar rostros en el marco en color
+            
+            # Convert to grayscale for face detection
             gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-            faces = face_cascade.detectMultiScale(gray, scaleFactor=1.1, minNeighbors=5, minSize=(30, 30))
-
+            faces = self.face_cascade.detectMultiScale(
+                gray, 
+                scaleFactor=1.1, 
+                minNeighbors=5, 
+                minSize=(30, 30)
+            )
+            
+            # Draw rectangles around detected faces
             for (x, y, w, h) in faces:
                 cv2.rectangle(frame, (x, y), (x+w, y+h), (0, 255, 0), 2)
-                face_image = frame[y:y+h, x:x+w]  # Extraer el rostro en color
-
-                # Convertir el rostro a bytes
-                _, img_bytes_capturada = cv2.imencode('.jpg', face_image)
-                img_bytes = img_bytes_capturada.tobytes()
-                break  # Salir del bucle si detecta al menos un rostro
-
-            cv2.imshow('Camara', frame)
-
-            if cv2.waitKey(1) & 0xFF == ord("q"):  # Presionar 'q' para guardar la imagen
-                if img_bytes:
-                    messagebox.showinfo('Foto capturada', 'Foto del rostro capturada correctamente')
-                else:
-                    messagebox.showwarning('Advertencia', 'No se detectó ningún rostro.')
+                face_img = frame[y:y+h, x:x+w]
+                
+                # Convert face image to bytes
+                _, buffer = cv2.imencode('.jpg', face_img)
+                self.img_bytes = buffer.tobytes()
+            
+            cv2.imshow('Captura de Rostro - Presione "q" para capturar', frame)
+            
+            # Press 'q' to capture and exit
+            if cv2.waitKey(1) & 0xFF == ord('q'):
                 break
         
-    cap.release()
-    cv2.destroyAllWindows()
-#--------------------------------------FUNCION QUE MUESTRA IMAGEGN--------------------------
-
-
-def mostrar_imagen(ruta_imagen):
-
-    if not os.path.exists(ruta_imagen):
-        print(f"Error: El archivo no se encuentra en la ruta: {ruta_imagen}")
-        return
-
-    ventana = tk.Tk()
-    ventana.title("Mostrar Imagen")
-    
-    try:
-        imagen = Image.open(ruta_imagen)
-        imagen_tk = ImageTk.PhotoImage(imagen)
+        self.cap.release()
+        cv2.destroyAllWindows()
         
-        etiqueta_imagen = tk.Label(ventana, image=imagen_tk)
-        etiqueta_imagen.pack()
-        
-        etiqueta_imagen.image = imagen_tk  # Mantener una referencia a la imagen
-        
-        ventana.mainloop()
-    except Exception as e:
-        print(f"Error al mostrar la imagen: {e}")
-
-
-
-
-#-------------------------------------FUNCIONES DE REGISTRO Y INICIO DE SESION-------------------------------------
-
-def registro():
-    global fecha_registro, img_bytes  # Asegúrate de que img_bytes esté disponible
-    
-    # Validar los campos de entrada
-    try:
-        validarDni(DNI_entry.get())
-        validarNombre(nombre_entry.get())
-        validarApellido(apellido_s_entry.get())
-        validarMail(mail_entry.get())
-        validarContrasena(password_entry.get())
-        validarConfirmarContrasena(password_confirm_entry.get(), password_entry.get())
-    except ValueError as e:
-        messagebox.showwarning("Error de Validación", str(e))
-        return
-    
-    # Contar entradas válidas
-    contador = 0
-    for entrada in Entradas:
-        if entrada.cget("fg_color").lower() == "#343638":
-            contador += 1
-    
-    if contador == 6:
-        nombre = nombre_entry.get()
-        apellido = apellido_s_entry.get()
-        mail = mail_entry.get()
-        dni = DNI_entry.get()
-        contraseña = password_entry.get()
-        confirmar_contraseña = password_confirm_entry.get()
-        fecha_registro = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-
-        # Crear carpeta para el usuario
-        carpeta_usuario = os.path.join('usuarios', f"{nombre}_{dni}")
-        os.makedirs(carpeta_usuario, exist_ok=True)
-        
-        # Llamar a la función de abrir la cámara y tomar una foto
-        abrir_camara()
-
-        # Definir la ruta de la imagen
-        ruta_imagen = os.path.join(carpeta_usuario, 'imagen.jpg')
-        
-        # Guardar la imagen en la carpeta
-        if img_bytes:
-            with open(ruta_imagen, 'wb') as img_file:
-                img_file.write(img_bytes)
+        if self.img_bytes:
+            messagebox.showinfo("Éxito", "Rostro capturado correctamente")
         else:
-            messagebox.showwarning("Error", "No se capturó ninguna imagen.")
+            messagebox.showwarning("Advertencia", "No se detectó ningún rostro")
+    
+    def compare_faces(self, img1_bytes, img2_bytes):
+        """Compare two face images using SSIM and LBPH"""
+        # Convert bytes to images
+        img1 = cv2.imdecode(np.frombuffer(img1_bytes, np.uint8), cv2.IMREAD_COLOR)
+        img2 = cv2.imdecode(np.frombuffer(img2_bytes, np.uint8), cv2.IMREAD_COLOR)
+        
+        if img1 is None or img2 is None:
+            return False
+        
+        # Resize images to same dimensions
+        img1 = cv2.resize(img1, (100, 100))
+        img2 = cv2.resize(img2, (100, 100))
+        
+        # Convert to grayscale
+        gray1 = cv2.cvtColor(img1, cv2.COLOR_BGR2GRAY)
+        gray2 = cv2.cvtColor(img2, cv2.COLOR_BGR2GRAY)
+        
+        # Calculate SSIM
+        ssim_score, _ = ssim(gray1, gray2, full=True)
+        
+        # LBPH face recognizer
+        recognizer = cv2.face.LBPHFaceRecognizer_create()
+        recognizer.train([gray1], np.array([0]))
+        _, confidence = recognizer.predict(gray2)
+        
+        # Combined threshold (adjust as needed)
+        return ssim_score > 0.5 and confidence < 60
+    
+    def register_user(self):
+        """Register a new user"""
+        if not self.is_form_valid():
+            messagebox.showwarning("Error", "Por favor complete todos los campos correctamente")
             return
         
-        # Insertar datos en la base de datos
-        base.datos_insertados(nombre, apellido, mail, dni, contraseña, confirmar_contraseña, fecha_registro, ruta_imagen)
-        messagebox.showinfo('', 'Alumno cargado correctamente')
+        if not self.img_bytes:
+            messagebox.showwarning("Error", "Debe capturar una imagen de rostro")
+            return
         
-        start_frame.tkraise()
-    else:
-        messagebox.showwarning("Error de Validación", "No todos los campos son válidos.")
-
-
-def inicioSesion():
-    global nombre  # Hacer la variable nombre global
-    dni = DNI_inicio_entry.get()
-    nombre = base.buscar(dni)  # Buscar el nombre usando el DNI
+        # Get form data
+        data = {name: entry.get() for name, entry in self.entries.items()}
+        
+        # Create user directory
+        user_dir = os.path.join('usuarios', f"{data['nombre_entry']}_{data['dni_entry']}")
+        os.makedirs(user_dir, exist_ok=True)
+        
+        # Save face image
+        img_path = os.path.join(user_dir, 'imagen.jpg')
+        with open(img_path, 'wb') as f:
+            f.write(self.img_bytes)
+        
+        # Save to database
+        registration_date = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        base.insert_user(
+            data['nombre_entry'], 
+            data['apellido_entry'], 
+            data['email_entry'], 
+            data['dni_entry'], 
+            data['password_entry'],
+            registration_date,
+            img_path
+        )
+        
+        messagebox.showinfo("Éxito", "Usuario registrado correctamente")
+        self.clear_form()
+        self.show_login()
     
-    if nombre:
-        messagebox.showinfo("Bienvenido", f"Bienvenido {nombre}")
-        start_frame.tkraise()
+    def login(self):
+        """Authenticate user"""
+        dni = self.DNI_inicio_entry.get()
+        if not dni.isdigit() or len(dni) != 8:
+            messagebox.showwarning("Error", "DNI inválido")
+            return
         
-        # Abrir la cámara y capturar la imagen
-        abrir_camara()
+        user = base.get_user_by_dni(dni)
+        if not user:
+            messagebox.showwarning("Error", "Usuario no encontrado")
+            return
         
-        # Leer la imagen guardada en la carpeta del usuario
-        carpeta_usuario = os.path.join('usuarios', f"{nombre}_{dni}")
-        imagen_guardada_path = os.path.join(carpeta_usuario, 'imagen.jpg')
+        # Capture face for authentication
+        self.capture_face_image()
+        if not self.img_bytes:
+            return
         
-        # Verificar que la imagen guardada existe
-        if os.path.exists(imagen_guardada_path):
-            with open(imagen_guardada_path, 'rb') as file:
-                img_bytes_guardada = file.read()
-            
-            # Comparar las imágenes
-            if img_bytes and img_bytes_guardada:
-                if comparar_imagenes(img_bytes_guardada, img_bytes):
-                    messagebox.showinfo("Acceso concedido", "La identidad ha sido verificada")
-                    base.mostrar_usuarios()
-                else:
-                    messagebox.showwarning("Acceso denegado", "No se pudo verificar la identidad")
-            else:
-                messagebox.showwarning("Error", "No se pudo capturar la imagen o la imagen guardada no está disponible.")
+        # Load registered face image
+        try:
+            with open(user['face_image_path'], 'rb') as f:
+                registered_img = f.read()
+        except Exception as e:
+            messagebox.showerror("Error", f"No se pudo cargar la imagen registrada: {str(e)}")
+            return
+        
+        # Compare faces
+        if self.compare_faces(registered_img, self.img_bytes):
+            self.current_user = user['nombre']
+            messagebox.showinfo("Éxito", f"Bienvenido {self.current_user}")
+            self.show_dashboard()
         else:
-            messagebox.showwarning("Error", "La imagen guardada no está disponible.")
+            messagebox.showwarning("Error", "Autenticación fallida: Rostro no coincide")
     
-    else:
-        messagebox.showwarning("Error", "DNI no encontrado. Verifique los datos e intente nuevamente.")
-
-
-
-
-#-------------------------------------FUNCIONES DE REGISTRO Y INICIO DE SESION-------------------------------------
-#------------------------------------------------boton inicial--------------------------------------------
-def botonIniciar():
-    limpiarRegistro()
-    DNI_inicio_entry.delete(0, 'end')  # Borra el contenido actual del campo de entrada
-    DNI_inicio_entry.configure(fg_color='#343638')  # Restablece el color del texto a gris
-    DNI_inicio_entry.configure(placeholder_text='DNI - Profesor')
-    button_frame.tkraise()
-    show_frame(sign_in_frame)
-###############################################################################FUNCIONES###############################################################################
-
-
-
-# Cargar el clasificador en cascada para detección de rostros
-face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
-
-# Verificar si el clasificador se cargó corre   ctamente
-if face_cascade.empty():
-    raise IOError("No se pudo cargar el clasificador en cascada.")
-
-
-# ---------------------------------------------Crear un contenedor para centrar los frames---------------------------------------------
-container = ctk.CTkFrame(root)
-container.place(relx=0.5, rely=0.5, anchor=tk.CENTER)
-
-
-#800 y 600
-# ---------------------------------------------Frame principal para contener Sign In y Register---------------------------------------------
-main_frame = ctk.CTkFrame(master=container, width=screen_width * 0.85 , height=screen_height * 0.8,fg_color=container.cget('fg_color'))
-main_frame.pack(padx=20, pady=20)
-
-#--------------------------------------------- Botones de alternancia en la parte superior---------------------------------------------
-button_frame = ctk.CTkFrame(master=main_frame, width=int(round(850*scale_width)), height=int(round(50*scale_height)), corner_radius=0, fg_color='blue')
-button_frame.place(relx=0.5, rely=0.05, anchor=tk.CENTER)
-
-#---------------------------------------------BOTONES DE ARRIBA---------------------------------------------
-#BOTON SIGN IN
-sign_in_button = ctk.CTkButton(master=button_frame, text="Iniciar Sesion", width=screen_width * 0.44, height=screen_height * 0.1,font=('arial',20), corner_radius=0, command=lambda: show_frame(sign_in_frame))
-sign_in_button.grid(row=0, column=0)
-
-#BOTON REGISTER
-register_button = ctk.CTkButton(master=button_frame, text="Registrarse", width=screen_width * 0.44, height=screen_height * 0.1,font=('arial',20), corner_radius=0, command=lambda: show_frame(register_frame),)
-register_button.grid(row=0, column=1)
-#---------------------------------------------BOTONES DE ARRIBA---------------------------------------------
-
-
-
-#---------------------------------------------Frame para Sign In---------------------------------------------
-sign_in_frame = ctk.CTkFrame(master=main_frame, width=screen_width * 0.85,height=screen_height * 0.75, corner_radius=0)
-sign_in_frame.place(relx=0.5, rely=0.55, anchor=tk.CENTER)
-# Botón para salir
-exit_button = ctk.CTkButton(
-    master=sign_in_frame, 
-    text="Salir", 
-    font=('Arial', 30), 
-    width=screen_width * 0.090, 
-    height=screen_height * 0.0450, 
-    fg_color="red", 
-    command=root.quit
-)
-exit_button.place(relx=0.765, rely=0.85, anchor=tk.SE)  # Ubicación en la parte inferior derecha
-#---------------------------------------------Título de Sign In---------------------------------------------
-sign_in_label = ctk.CTkLabel(master=sign_in_frame, text="Iniciar Sesion", font=("Arial", 30))
-sign_in_label.place(relx=0.5, rely=0.48, anchor=tk.CENTER)
-
-
-image_path = 'Icono_Usuario.png' 
-pil_image = Image.open(image_path)
-
-# Convertir la imagen de PIL a un objeto PhotoImage compatible con Tkinter
-pil_image = pil_image.resize((int(round(300*scale_width)),int(round(300*scale_height))), Image.LANCZOS)
-
-tk_image = ImageTk.PhotoImage(pil_image)
-
-
-# Imagen de usuario (placeholder)
-user_image = ctk.CTkLabel(master=sign_in_frame,text='', image=tk_image, width=int(round(100*scale_width)), height=int(round(100*scale_height)), corner_radius=50)
-user_image.place(relx=0.5, rely=0.285, anchor=tk.CENTER)
-
-
-
-# Campo de Username or Email
-DNI_inicio_entry = ctk.CTkEntry(master=sign_in_frame, placeholder_text="DNI - Profesor", width=screen_width * 0.45, height=screen_height * 0.05)
-DNI_inicio_entry.place(relx=0.5, rely=0.6, anchor=tk.CENTER)
-
-
-# ---------------------------------------------FREAME SIGN IN---------------------------------------------
-#BOTON SIGN IN
-sign_in_button_main = ctk.CTkButton(master=sign_in_frame, text="Iniciar Sesion", width=screen_width * 0.45, height=screen_height * 0.07, font=("Arial", 30),command=lambda: inicioSesion())
-sign_in_button_main.place(relx=0.5, rely=0.715, anchor=tk.CENTER)
-
-
-# Frame para Sign In
-register_frame = ctk.CTkFrame(master=main_frame, width=screen_width * 0.85,height=screen_height * 0.75, corner_radius=0)
-register_frame.place(relx=0.5, rely=0.55, anchor=tk.CENTER)
-# Botón para salir
-exit_button = ctk.CTkButton(
-    master=register_frame, 
-    text="Salir", 
-    font=('Arial', 30), 
-    width=screen_width * 0.090, 
-    height=screen_height * 0.0450, 
-    fg_color="red", 
-    command=root.quit
-)
-exit_button.place(relx=0.8650, rely=0.9370, anchor=tk.SE)  # Ubicación en la parte inferior derecha
-
-#Nombre
-nombre_entry = ctk.CTkEntry(master=register_frame, placeholder_text="Nombre/s",  width=screen_width * 0.45, height=screen_height * 0.05)
-nombre_entry.place(relx=0.6, rely=0.2, anchor=tk.CENTER)
-
-#Apellido
-apellido_s_entry = ctk.CTkEntry(master=register_frame, placeholder_text="Apellido/s",  width=screen_width * 0.45, height=screen_height * 0.05)
-apellido_s_entry.place(relx=0.6, rely=0.3, anchor=tk.CENTER)
-
-
-# Campo de Username or Email
-mail_entry = ctk.CTkEntry(master=register_frame, placeholder_text="e-mail", width=screen_width * 0.45, height=screen_height * 0.05)
-mail_entry.place(relx=0.6, rely=0.4, anchor=tk.CENTER)
-
-#DNI
-DNI_entry = ctk.CTkEntry(master=register_frame, placeholder_text="DNI",  width=screen_width * 0.45, height=screen_height * 0.05)
-DNI_entry.place(relx=0.6, rely=0.5, anchor=tk.CENTER)
-
-# Campo de Password
-password_entry = ctk.CTkEntry(master=register_frame, placeholder_text="Contraseña", show="*", width=screen_width * 0.45, height=screen_height * 0.05)
-password_entry.place(relx=0.6, rely=0.6, anchor=tk.CENTER)
-
-#Confirmar Contraseña
-password_confirm_entry = ctk.CTkEntry(master=register_frame, placeholder_text="Confirmar Constraseña", show="*", width=screen_width * 0.45, height=screen_height * 0.05)
-password_confirm_entry.place(relx=0.6, rely=0.7, anchor=tk.CENTER)
-
-Entradas=[DNI_entry,nombre_entry,apellido_s_entry,mail_entry,password_confirm_entry,password_entry]
-#-----------------------------------ENTRYS PARA EL REGISTER-----------------------------------
-# --------------------------Botón de REGISTER---------------------------
-register_button_main = ctk.CTkButton(master=register_frame, text="Registrarse", width=screen_width * 0.45, height=screen_height * 0.075, font=("Arial", 30),command=lambda: registro())
-register_button_main.place(relx=0.6, rely=0.8, anchor=tk.CENTER)
-
-user_image2 = ctk.CTkLabel(master=register_frame,text='', image=tk_image, width=int(round(50*scale_width)), height=int(round(50*scale_height)), corner_radius=50)
-user_image2.place(relx=0.17, rely=0.50, anchor=tk.CENTER)
-
-
-###############################################################################FRAME VISUALIZAR DATOS###############################################################################
-
-
-def crear_frame_visualizar_datos(root):
-    # Crear un frame para mostrar la base de datos
-    frame_datos = tk.Frame(root)
-    frame_datos.pack(fill=tk.BOTH, expand=True)
-
-    # Conexión a la base de datos
-    conn = sqlite3.connect('EBI.db')
-    cur = conn.cursor()
-
-    # Consulta para obtener todos los registros
-    cur.execute("SELECT * FROM registrados")
-    registros = cur.fetchall()
-
-    # Crear tabla
-    tabla = tk.Treeview(frame_datos, columns=('Nombre', 'Apellido', 'Email', 'DNI', 'Contraseña', 'Confirmar Contraseña', 'Fecha Registro'), show='headings')
-    tabla.heading('Nombre', text='Nombre')
-    tabla.heading('Apellido', text='Apellido')
-    tabla.heading('Email', text='Email')
-    tabla.heading('DNI', text='DNI')
-    tabla.heading('Contraseña', text='Contraseña')
-    tabla.heading('Confirmar Contraseña', text='Confirmar Contraseña')
-    tabla.heading('Fecha Registro', text='Fecha Registro')
-
-    # Insertar datos en la tabla
-    for registro in registros:
-        tabla.insert('', 'end', values=registro)
-
-    tabla.pack(fill=tk.BOTH, expand=True)
-
-    # Cerrar la conexión a la base de datos
-    conn.close()
-
-    # Crear botón "Salir"
-    salir_button = tk.Button(frame_datos, text="Salir", command=root.quit)
-    salir_button.place(relx=0.50, rely=0.40,anchor=tk.CENTER)
-
-###############################################################################FRAME VISUALIZAR DATOS###############################################################################
-
-
-###############################################################################INICIO FRAME-BOTON-TODOO###############################################################################
-
-start_frame = ctk.CTkFrame(master=main_frame, width=screen_width * 0.85,height=screen_height * 0.8, corner_radius=0)
-start_frame.place(relx=0.5, rely=0.5, anchor=tk.CENTER)
-
-
-image_path = 'Logo_e.b.i.png'  
-pil_image = Image.open(image_path)
-
-# Ajustar el tamaño de la imagen (opcional)
-pil_image = pil_image.resize((int(round(300*scale_width)),int(round(300*scale_height))), Image.LANCZOS)
-
-# Convertir la imagen de PIL a un objeto PhotoImage compatible con Tkinter
-tk_image = ImageTk.PhotoImage(pil_image)
-
-
-# Imagen de usuario (placeholder)
-user_image = ctk.CTkLabel(master=start_frame,text='', image=tk_image, width=200, height=200, corner_radius=50)
-user_image.place(relx=0.5, rely=0.25, anchor=tk.CENTER)
-
-start_label = ctk.CTkLabel(master=start_frame, text="E.B.I.", font=("Arial", 40))
-start_label.place(relx=0.5, rely=0.5, anchor=tk.CENTER)
-
-linea_label = ctk.CTkLabel(master=start_frame, text="______________________________", font=("Arial", 20))
-linea_label.place(relx=0.5, rely=0.55, anchor=tk.CENTER)
-
-slogan_label = ctk.CTkLabel(master=start_frame, text="Escaner Biometrico Inteligente", font=("Arial", 20))
-slogan_label.place(relx=0.5, rely=0.62, anchor=tk.CENTER)
-
-start_button_main = ctk.CTkButton(master=start_frame, text="Iniciar",font=('Arial',30), width=screen_width * 0.5, height=screen_height * 0.1,command=lambda: botonIniciar())
-start_button_main.place(relx=0.5, rely=0.8, anchor=tk.CENTER)
-
-
-# Mostrar el frame de Sign In al inicio
-start_frame.tkraise()
-
-# Botón para salir
-exit_button = ctk.CTkButton(
-    master=start_frame, 
-    text="Salir", 
-    font=('Arial', 30), 
-    width=screen_width * 0.090, 
-    height=screen_height * 0.0450, 
-    fg_color="red", 
-    command=root.quit
-)
-exit_button.place(relx=0.795, rely=0.95, anchor=tk.SE)  # Ubicación en la parte inferior derecha
-
-root.mainloop()
-
-###############################################################################INICIO FRAME-BOTON-TODOO###############################################################################
-
-
-
-
-'''
-botonCargarImagen = ctk.CTkButton(master=register_frame, text="Abrir camara",fg_color="#1A93A6", command = abrir_camara)
-botonCargarImagen.place(relx=0.18,rely=0.75, anchor=tk.CENTER)
-comentarios
-
-        ## Guardar los valores globalmente para el archivo principal
-        #global nombre, apellido, mail, dni, contraseña, confirmar_contraseña
-        #nombre = nombre_entry.get()
-        #apellido = apellido_s_entry.get()
-        #mail = mail_entry.get()
-        #dni = DNI_entry.get()
-        #contraseña = password_entry.get()
-        #confirmar_contraseña = password_confirm_entry.get()
-        # 
-        # # Funciones.insertar_persona(entradaDni.get(),entradaNombre.get(),entradaApellido.get(),entradaDomicilio.get(),entradaMail.get(),entradaTelefono.get(),entradaUsuario.get(),entradaContrasena.get(),img_bytes)
-        # 
-
-        # 
-# image_path = 'Icono_Usuario.png'  
-# pil_image = Image.open(image_path)
-
-# # Ajustar el tamaño de la imagen (opcional)
-# pil_image = pil_image.resize((int(round(300*scale_width)),int(round(300*scale_height))), Image.LANCZOS)
-
-# # Convertir la imagen de PIL a un objeto PhotoImage compatible con Tkinter
-# tk_image = ImageTk.PhotoImage(pil_image)
-
-
-# # Imagen de usuario (placeholder)
-# user_image = ctk.CTkLabel(master=register_frame,text='', image=tk_image, width=100, height=100, corner_radius=50)
-# user_image.place(relx=0.18, rely=0.5, anchor=tk.CENTER)
-
-        # 
-        # 
+    def show_records(self):
+        """Show user records"""
+        conn = sqlite3.connect('EBI.db')
+        cursor = conn.cursor()
         
-        def load_image():
-    global img_bytes
-    file_path = filedialog.askopenfilename(filetypes=[("Image files", "*.jpg *.jpeg")])
-    if file_path:
-        img = Image.open(file_path)
-        img.thumbnail((int(round(288*scale_height)),int(round(288*scale_width))))
-        img_tk = ImageTk.PhotoImage(img)
-        image_label.configure(image=img_tk)
-        image_label.image = img_tk
+        try:
+            cursor.execute("SELECT * FROM registrados")
+            records = cursor.fetchall()
+            
+            # Create a new window to display records
+            records_window = ctk.CTkToplevel(self.root)
+            records_window.title("Registros de Usuarios")
+            records_window.geometry("900x500")
+            
+            # Create treeview
+            columns = ("ID", "Nombre", "Apellido", "Email", "DNI", "Fecha Registro")
+            tree = tk.ttk.Treeview(records_window, columns=columns, show="headings")
+            
+            # Configure columns
+            for col in columns:
+                tree.heading(col, text=col)
+                tree.column(col, width=150)
+            
+            # Add data
+            for record in records:
+                tree.insert("", "end", values=record[:6])  # Exclude password and image path
+            
+            # Add scrollbar
+            scrollbar = tk.Scrollbar(records_window, orient="vertical", command=tree.yview)
+            tree.configure(yscrollcommand=scrollbar.set)
+            
+            # Layout
+            tree.pack(side="left", fill="both", expand=True)
+            scrollbar.pack(side="right", fill="y")
+            
+        except sqlite3.Error as e:
+            messagebox.showerror("Error de Base de Datos", str(e))
+        finally:
+            conn.close()
+    
+    def take_attendance(self):
+        """Take attendance using facial recognition"""
+        # Implement your attendance logic here
+        messagebox.showinfo("Asistencia", "Funcionalidad de toma de asistencia en desarrollo")
+    
+    def show_reports(self):
+        """Show attendance reports"""
+        # Implement your reporting logic here
+        messagebox.showinfo("Reportes", "Funcionalidad de reportes en desarrollo")
+    
+    def manage_users(self):
+        """Manage users (admin only)"""
+        password = simpledialog.askstring(
+            "Acceso Administrativo", 
+            "Ingrese contraseña de administrador:", 
+            show='*',
+            parent=self.root
+        )
+        
+        if password != 'admin':
+            messagebox.showwarning("Error", "Acceso denegado")
+            return
+        
+        # Implement user management functionality
+        messagebox.showinfo("Administración", "Funcionalidad de administración de usuarios en desarrollo")
+    
+    def logout(self):
+        """Logout current user"""
+        self.current_user = None
+        self.DNI_inicio_entry.delete(0, tk.END)
+        self.show_login()
 
-        # Convertir imagen a bytes
-        with open(file_path, 'rb') as file:
-            img_bytes = file.read()
-
-        # # Campo de Password
-# password_entry = ctk.CTkEntry(master=sign_in_frame, placeholder_text="Password", show="*", width=screen_width * 0.45, height=screen_height * 0.05)
-# password_entry.place(relx=0.6, rely=0.5, anchor=tk.CENTER)
-# password_label = ctk.CTkLabel(master=sign_in_frame, text="Password", font=("Arial", 15))
-# password_label.place(relx=0.396, rely=0.45, anchor=tk.CENTER)
-# 
-
-# '''
-'''
-s# TITULO DE REGISTER
-register_label = ctk.CTkLabel(master=register_frame, text=".", font=("Arial", 35))
-register_label.place(relx=0.18, rely=0.23, anchor=tk.CENTER)'''
-
-'''
-image_frame = ctk.CTkFrame(master=register_frame, height=200,width=200,border_color='gray',border_width=2)
-image_frame.place(relx=0.18,rely=0.5, anchor=tk.CENTER)
-
-image_label = ctk.CTkLabel(master=image_frame, text="")
-image_label.place(relx=0.02,rely=0.02)'''
-
-
-'''User_label = ctk.CTkLabel(master=sign_in_frame, text="DNI - Profesor", font=("Arial", 15))
-User_label.place(relx=0.282, rely=0.54, anchor=tk.CENTER)'''
+# ================================================ RUN APPLICATION ================================================
+if __name__ == "__main__":
+    app = FacialRecognitionApp()
