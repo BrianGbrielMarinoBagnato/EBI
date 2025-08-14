@@ -694,3 +694,4 @@ class FacialRecognitionApp:
 # ================================================ RUN APPLICATION ================================================
 if __name__ == "__main__":
     app = FacialRecognitionApp()
+    # End of file   
