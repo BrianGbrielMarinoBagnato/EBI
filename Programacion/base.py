@@ -24,7 +24,7 @@ def crear_tabla():
     )""")
     conn.commit()
     conn.close()
-
+# yo
 # Función para insertar los datos en la base de datos
 def datos_insertados(nombre, apellido, email, dni, contraseña, confirmar_contraseña, fecha_registro, foto):
     try:
